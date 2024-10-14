@@ -19,7 +19,7 @@ This project provides custom React hooks, `useQuery` and `useMutation`, that sim
 
 ## Usage
 
-## Fetch config
+## Fetch config & Wrapper
 
 - **This fetchConfig object is a configuration object that controls two key behaviors for fetching data: refetching on window focus and caching time**.
 - **Here's a breakdown of how it works:**
@@ -27,7 +27,8 @@ This project provides custom React hooks, `useQuery` and `useMutation`, that sim
 ```typescript
 export type FetchConfigType = {
   refetchOnWindowFocus?: boolean;
-  cacheTime?: number;
+  cacheTime: number;
+  BASE_URL:string
 };
 ```
 
@@ -58,6 +59,24 @@ This setup mimics the behavior of React Query's refetchOnWindowFocus and staleTi
 ```
 
 ## Basic Usage Example
+
+## Consume `FetchWrapper`
+
+- **Here's how to consume the FetchWrapper :**
+
+```javascript
+import { FetchClient, FetchWrapper } from "use-query-fetch";
+
+const { defaultOptions } = new FetchClient({
+  BASE_URL: "https://your-route/api/v1",
+  cacheTime: 60 * 1000,
+});
+const App = () => {
+    return  <FetchWrapper client={defaultOptions}>
+    {...}
+  </FetchWrapper>
+};
+```
 
 ## `useQuery`
 
