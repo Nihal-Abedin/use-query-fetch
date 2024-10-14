@@ -1,0 +1,27 @@
+{
+  "name": "use-query-fetch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Nihal-Abedin/use-query-fetch.git"
+  },
+  "author": "Nihal Abedin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nihal-Abedin/use-query-fetch/issues"
+  },
+  "homepage": "https://github.com/Nihal-Abedin/use-query-fetch#readme",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "dotenv": "^16.4.5"
+  },
+  "preeDevDependencies": {
+    "@types/node": "^22.7.5"
+  }
+}
