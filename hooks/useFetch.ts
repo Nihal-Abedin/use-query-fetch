@@ -7,9 +7,7 @@ export type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: string | FormData;
   headers?: HeadersInit;
-  BASE_URL?: string;
 }
-const BASE_URL = process.env.BASE_URL
 export const useFetch = (
   requestUrl: string,
   options?: RequestOptions & FetchConfigType
@@ -22,7 +20,7 @@ export const useFetch = (
   const paramOptions: RequestOptions = {
     method: "GET",
     ...options,
-    BASE_URL: options.BASE_URL || BASE_URL,
+    BASE_URL: options.BASE_URL,
   }
   const fetchData = useCallback(async (ignoreCache = false) => {
 

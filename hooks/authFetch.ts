@@ -5,7 +5,6 @@
 //     user.token = token;
 //     localStorage.setItem('user', JSON.stringify(user));
 // }
-const BASE_URL = process.env.BASE_URL
 
 export const authFetch = async (
     url: string,
@@ -18,7 +17,7 @@ export const authFetch = async (
     } = {}
 ) => {
     // options.BASE_URL = "https://natours-sable-three.vercel.app/api/v1";
-    const accessToken = JSON.parse(`${localStorage.getItem("user")}`)?.token || 'sad';
+    const accessToken = localStorage.getItem("token") || 'sad';
     if (!accessToken) {
         // goto('/')
         return;
@@ -52,7 +51,7 @@ export const authFetch = async (
 
     // Make the fetch request
     const response = await fetch(
-        `${options.OTHER_BASE_URL ? options.OTHER_BASE_URL : options.BASE_URL ? options.BASE_URL : BASE_URL
+        `${options.OTHER_BASE_URL ? options.OTHER_BASE_URL : options.BASE_URL
         }/${url}`,
         reqOptions
     );
