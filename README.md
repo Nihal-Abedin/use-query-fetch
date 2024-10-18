@@ -1,4 +1,4 @@
-# Custom React Query Hooks `v-1.0.1`
+# Custom React Query Hooks `v-2.0.0`
 
 This project provides custom React hooks, `useQuery` and `useMutation`, that simplify data fetching and mutation using the Fetch API. The main purpose of building these hooks is to integrate seamlessly with **React Query**, enhancing state management for server data.
 
@@ -13,50 +13,34 @@ This project provides custom React hooks, `useQuery` and `useMutation`, that sim
 ## Features
 
 - **`useQuery`**: Fetches data from an API endpoint and handles success and error scenarios with optional callbacks.
-- **`useMutation`**: Performs data modifications (POST, PATCH, etc.) and manages the request's state and responses.
-- **Configurable**: Allows for flexible configuration, including cache time and refetching on window focus.
-- **Auth Request**: Allows Authentication request for any for any routes by default! `In case of AUTHORIZATION Please set your Set Your token to Local storage as name **`token`** `
+- **`useMutation`**: Performs data modifications manages the request's state and responses.
+- **`Configurable`**: Allows for flexible configuration, including cache time and refetching on window focus.
 
 ## Usage
 
-## Fetch config & Wrapper
+## Fetch config & Fetch Client
 
-- **This fetchConfig object is a configuration object that controls two key behaviors for fetching data: refetching on window focus and caching time**.
-- **Here's a breakdown of how it works:**
+## Fetch Config
 
-```typescript
-export type FetchConfigType = {
-  refetchOnWindowFocus?: boolean;
-  cacheTime: number;
-  BASE_URL:string
-};
-```
+- This fetchConfig object is a configuration object that controls two key behaviors for fetching data: refetching on window focus and caching time.
+- Here's a breakdown of how it's types:
 
-- **refetchOnWindowFocus: A boolean option that determines whether the data should be refetched when the browser window gains focus again. If set to true, the app will refetch the data every time the user switches back to the browser tab (similar to React Query's refetchOnWindowFocus behavior).**
+  ```typescript
+  type FetchConfigType = {
+    refetchOnWindowFocus?: boolean; // default false
+    cacheTime?: number; // default 1 minute
+  };
+  ```
 
-- **cacheTime: A number (in milliseconds) that defines how long the fetched data will be cached before it becomes stale and needs to be refetched. In this case, it's set to 60 \* 1000, which is 60 seconds (or 1 minute). You can modify this time to control how long data should remain cached.**
+  - **`refetchOnWindowFocus`**: A boolean option that determines whether the data should be refetched when the browser window gains focus again. If set to true, the app will refetch the data every time the user switches back to the browser tab (similar to React Query's refetchOnWindowFocus behavior).
 
-```typescript
-export const fetchConfig: FetchConfigType = {
-  refetchOnWindowFocus: true, // Enable refetching when window gains focus
-  cacheTime: 60 * 1000, // Cache data for 1 minute (60,000 milliseconds)
-};
-```
+  - **`cacheTime`**: A number (in milliseconds) that defines how long the fetched data will be cached before it becomes stale and needs to be refetched. In this case, it's set to 60 \* 1000, which is 60 seconds (or 1 minute). You can modify this time to control how long data should remain cached.
 
-- **refetchOnWindowFocus: true: This means that the application will automatically refetch the data when the window gains focus. This is useful in situations where you want to ensure that your data is fresh if the user returns to the app after being away.**
+## Fetch Client
 
-- **cacheTime: 60 \* 1000: This sets the caching time to 1 minute. Data will be cached for 60 seconds, after which it will become stale and a new fetch request will be made.**
-
-```typescript
-
-This configuration can be passed to a custom fetch hook or used directly with a data-fetching library like React Query to fine-tune refetching and caching behavior. Here’s an example of how you might use it:
-
-const { data, error } = useFetch('/api/data', {
-    ...fetchConfig // apply the configuration to your fetch hook
-});
-
-This setup mimics the behavior of React Query's refetchOnWindowFocus and staleTime options.
-```
+- The FetchClient class provides a robust framework for handling data fetching and caching in a React application. It simplifies the process of managing cache, and refetching queries, ensuring that your application's data stays fresh and consistent.
+  - `getQueryCacheData` - Takes a key as params and gets the ached data corresponding to the **key**.
+  - `refetchQueries` - Takes a key as params and refetched any query that matches to **key**. Very usefull when any data is mutate and requies latest data to be shown!
 
 ## Basic Usage Example
 
@@ -64,32 +48,42 @@ This setup mimics the behavior of React Query's refetchOnWindowFocus and staleTi
 
 - **Here's how to consume the FetchWrapper :**
 
-```javascript
-import { FetchClient, FetchWrapper } from "use-query-fetch";
+  ```javascript
+      import { FetchClient } from "use-query-fetch";
 
-const { defaultOptions } = new FetchClient({
-  BASE_URL: "https://your-route/api/v1",
-  cacheTime: 60 * 1000,
-});
-const App = () => {
-    return  <FetchWrapper client={defaultOptions}>
-    {...}
-  </FetchWrapper>
-};
-```
+      export const client = new FetchClient({
+          refetchOnWindowFocus: true,
+      });
+      const App = () => {
+          return  <FetchWrapper client={client.defaultOptions}>
+          {...}
+        </FetchWrapper>
+      };
+  ```
+
+  - As the `client` equipped with the Parent methods, later we can use it for other cases with the same configeration so export it can be usefull.
 
 ## `useQuery`
 
 - **Here's how to use the useQuery hook to fetch data:**
 
 ```javascript
-import { useQuery } from "./path/to/useQuery";
+import { useQuery } from "use-query-fetch";
 
 const MyComponent = () => {
-  const { data, isLoading, isError } = useQuery("/your-api-endpoint", {
-    onSuccess: (data) => console.log("Data fetched successfully:", data),
-    onError: (error) => console.error("Error fetching data:", error),
-  });
+  const { data, isLoading, isError, error } = useQuery<
+  //expected Response TYPES
+   {message:string;reults:number}>({
+        queryKey: 'your-key', // `Every key should be unique so that every cached data has their own identifier and can be used later`
+        queryFn: asyn()=>{
+            // must be an ASYNC funtion
+            // Your api call here
+        }
+    },{
+        onSuccess: (data) => console.log("Data loaded successfully:", data), // Fires when success
+        // data will get the type defination you pass above.
+        onError: (error) => console.error("Error posting data:", error), // Fires when error occurs
+    })
 
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Error occurred.</p>;
@@ -103,23 +97,31 @@ const MyComponent = () => {
 - **To modify data, you can use the useMutation hook:**
 
 ```javascript
-import { useMutation } from "./path/to/useMutation";
+import { useMutation } from "use-query-fetch";
 
 const MyComponent = () => {
-  const { mutate, isLoading, isError, error } = useMutation(
-    "/your-api-endpoint",
-    {
-      method: "POST",
-      onSuccess: (data) => console.log("Data posted successfully:", data),
-      onError: (error) => console.error("Error posting data:", error),
-    }
-  );
+  const { data, isLoading, isError, error, mutate } = useMutation<
+  //expected Payload TYPES
+  {title:string}
+  >({
+        queryFn: asyn()=>{
+            // must be an ASYNC funtion
+            // Your api call here
+        }
+    })
 
   const handleSubmit = () => {
     const payload = {
       /* your data */
     };
-    mutate(payload);
+    mutate(payload,{
+            onError(error) {
+              console.error(error); // Fires when error occurs
+            },
+            onSuccess(data) {
+              console.log(data); // Fires when success
+            },
+          }); // make sure that the payload remains as same expected type
   };
 
   return (
@@ -131,21 +133,46 @@ const MyComponent = () => {
   );
 };
 ```
-## Query Options
 
-## BASE_URL `Usage`
-- **Both useQuery and useMutation hooks accept an optional BASE_URL parameter. This allows you to specify a base URL for your API calls, making it easier to manage multiple endpoints without repeating the base URL in each request.**
+## Fetch Client (Contd.)
 
-  ## **`You can use the BASE_URL for:`**
+- **As now Fetch Client has the capacity to get some cached data and refetch api based onto `key`. Some updates can be done with this and more yet to come**
 
-
-  1. **`Multiple Services:`** If you have multiple API services (e.g., authentication, data fetching, etc.), you can set different base URLs for each service. This allows you to keep your requests organized and clear.
-
-  2. **`Single Service:`** If your application communicates with a single API service, you can set the base URL once and simplify all your API requests.
-  For example, if your API is hosted at https://your-api-base-url.com, you can set it as follows:
-
+  1. **`Refetch Queries:`** If client finds any cached data corresponding to that key. It re-fetches that exact query for the exact key.
 
   ```javascript
-  BASE_URL: 'https://your-api-base-url.com'
+  // here the exported client come in handy!
+  client.refetchQueries("keys");
+  // or
+  // also can be called inside some callbacks
+  mutate(
+    { title: "Hi" },
+    {
+      onSuccess() {
+        client.refetchQueries("keys"); // unique keys & makes sure that the latest data is fetched after mutating. :D
+      },
+    }
+  );
   ```
-  This URL will be automatically prepended to the path argument you pass to the hooks.
+
+  2. Suppose You want a Sepecific query to cached for a specific time other than all the remain queries & want to reftch it every time when the window is focused
+
+  ```javascript
+    const {defaultOptions} = new FetchClient({
+            cacheTime:60*60*1000,
+            refetchOnWindowFocus:true
+    });
+    useQuery<
+      //expected Response TYPES
+       {message:string;reults:number}>({
+            queryKey: 'your-key',
+            queryFn: asyn()=>{
+            },
+            config: {
+                ...defaultOptions
+            }
+
+        })
+  ```
+
+**Thank you <3**.

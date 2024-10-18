@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
 import { useFetch } from "./useFetch";
-import { authFetch } from "./authFetch";
 import { useFetchContext } from "./useFetchContext";
 
 
 type CallbackOptions = {
     onSuccess?: (data: unknown) => void;
     onError?: (error: unknown) => void;
+};
+export interface QueryProperties {
+    queryKey: string;
+    queryFn: (payload?: unknown) => Promise<Response>;
 }
-export const useQuery = (
-    path: string,
+export const useQuery = <T>(
+    queryOptions: QueryProperties,
     options?: CallbackOptions
 ) => {
-    const { BASE_URL, ...restConfigOptions } = useFetchContext()
-    const { data, error, isError, isLoading } = useFetch(path, { method: "GET", BASE_URL: BASE_URL, ...restConfigOptions });
+    const clientConfig = useFetchContext();
+    const { data, error, isError, isLoading } = useFetch<T>(queryOptions, {
+        method: "GET",
+        ...clientConfig,
+    });
     useEffect(() => {
         if (options?.onSuccess && data) {
             options.onSuccess(data);
@@ -24,35 +30,35 @@ export const useQuery = (
     }, [data, error, options]);
     return { data, error, isError, isLoading };
 };
-export const useMutation = (
-    path: string,
-    options?: {
-        method?: "POST" | "PATCH" | "PUT" | "DELETE";
-        BASE_URL?: string;
-    }
+export const useMutation = <P>(
+    queryOptions: { queryFn: (payload: P) => Promise<Response> },
 ) => {
-    const { BASE_URL } = useFetchContext()
-
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isError, setIsError] = useState(false);
     const [error, setError] = useState(null);
 
-    const doMutation = async (payload, callbacks?: CallbackOptions) => {
+    const doMutation = async (payload: P, callbacks?: CallbackOptions) => {
         setIsLoading(true);
         try {
-            const res = await authFetch(path, { body: payload, method: "POST", BASE_URL: BASE_URL, ...options });
-            if (!res.ok) {
-                throw res;
-            }
+            const res = await queryOptions.queryFn(payload);
             const resData = await res.json();
             setData(resData);
-            callbacks?.onSuccess(resData)
+            if (callbacks?.onSuccess) {
+                callbacks.onSuccess(resData);
+            }
         } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+                setIsError(true);
+                return
+            }
             const errRes = await err.json();
             setError(errRes);
             setIsError(true);
-            callbacks.onError(errRes)
+            if (callbacks?.onError) {
+                callbacks.onError(errRes);
+            }
         } finally {
             setIsLoading(false);
         }

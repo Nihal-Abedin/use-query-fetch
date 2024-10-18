@@ -1,14 +1,14 @@
 // src/lib/cache.ts
 
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
+import { QueryState } from "./useFetch";
 
 // import { fetchConfig } from "../utils/fetchConfig";
 
 interface CachedResponse {
     body: string;
-    status: number;
-    statusText: string;
-    headers: HeadersInit;
+    queryFn: (payload?: unknown) => Promise<Response>;
+    setState: React.Dispatch<React.SetStateAction<QueryState<unknown>>>;
 }
 
 type CacheEntry<T> = {

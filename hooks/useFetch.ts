@@ -1,95 +1,89 @@
 import { useState, useEffect, useCallback } from "react";
 import { getFromCache, setToCache } from "./cache"; // Implement these cache functions
-import { authFetch } from "./authFetch";
 import { useWindowFocus } from "./useWindowFocus";
 import { FetchConfigType } from "../utils/fetchConfig";
+import { QueryProperties } from "./useFetchFactory";
 export type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: string | FormData;
   headers?: HeadersInit;
+  BASE_URL?: string;
 }
-export const useFetch = (
-  requestUrl: string,
+export interface QueryState<T> {
+  data: T | null;
+  isLoading: boolean;
+  isError: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  error: any | null;
+}
+export const useFetch = <T>(
+  queryOptions: QueryProperties, // function that performs the fetch and returns the response or error
   options?: RequestOptions & FetchConfigType
 ) => {
-  const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const [error, setError] = useState(null);
+  const { queryFn, queryKey } = queryOptions
+  const [state, setState] = useState<QueryState<T>>({
+    data: null as T | null,
+    isLoading: true,
+    isError: false,
+    error: null,
+  });
   const isWindowFocused = useWindowFocus(); // Get window focus state
-  const paramOptions: RequestOptions = {
-    method: "GET",
-    ...options,
-    BASE_URL: options.BASE_URL,
-  }
+
   const fetchData = useCallback(async (ignoreCache = false) => {
-
-    const isGetMethod =
-      paramOptions.method?.toUpperCase() === "GET" || !paramOptions.method;
-
-    // Check cache for GET requests
-    if (!ignoreCache && isGetMethod) {
-      const cachedResponse = getFromCache(requestUrl);
-      if (cachedResponse) {
-        setData(JSON.parse(cachedResponse.body));
-        setIsLoading(false);
-        return;
-      }
-    }
-
     try {
-      const customHeaders = { ...paramOptions.headers };
-      // if (apiKey) {
-      //     customHeaders['api-key'] = apiKey;
-      // }
-
-      const response = await authFetch(requestUrl, {
-        method: paramOptions.method,
-        headers: customHeaders,
-        body: paramOptions.body,
-        BASE_URL: paramOptions.BASE_URL
-      });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+      // Call the provided fetch function
+      const req = await queryFn();
+      const responseData = await req.json() as T
+      // Handle GET request caching if applicable
+      if (!ignoreCache && options?.method?.toUpperCase() === 'GET') {
+        const cachedResponse = getFromCache(queryKey); // Use the fetch function's identity as a cache key
+        if (cachedResponse) {
+          
+          setState(prev => ({ ...prev, data: JSON.parse(cachedResponse.body), isLoading: false }))
+          return;
+        }
       }
 
-      const responseData = await response.json();
-      setData(responseData);
+      setState(prev => ({ ...prev, data: responseData, isError: false }))
 
-      // Cache the GET response
-      if (isGetMethod) {
-        setToCache(requestUrl, {
+      // Cache the GET response if applicable
+      if (options?.method?.toUpperCase() === 'GET') {
+        setToCache(queryKey, {
           body: JSON.stringify(responseData),
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
+          queryFn: queryFn,
+          setState
         }, options.cacheTime);
       }
+
     } catch (err) {
+      if (err instanceof Error) {
+        setState(prev => ({ ...prev, error: err, isError: true }))
+
+        return
+      }
       const errRes = await err.json()
-      setIsError(true);
-      setError(errRes);
+      setState(prev => ({ ...prev, error: errRes, isError: true }))
+
       console.error(errRes);
     } finally {
-      setIsLoading(false);
+      setState(prev => ({ ...prev, isLoading: false }))
     }
-  }, [options.cacheTime, paramOptions.BASE_URL, paramOptions.body, paramOptions.headers, paramOptions.method, requestUrl]);
+  }, [options?.cacheTime, options?.method, queryFn, queryKey]);
 
   // Trigger fetching when the component mounts or dependencies change
   useEffect(() => {
     fetchData();
     return () => {
-      setIsLoading(true);
-      setIsError(false);
-      setError(null);
-
-    }
+      setState(prev => ({ ...prev, isLoading: true, isError: false, error: null }))
+    };
   }, [fetchData]);
+
+  // Handle refetch on window focus if needed
   useEffect(() => {
-    if (!isWindowFocused && options.refetchOnWindowFocus) {
+    if (isWindowFocused && options?.refetchOnWindowFocus) {
       fetchData(true); // Pass true to ignore cache when refetching
     }
-  }, [isWindowFocused, fetchData, options.refetchOnWindowFocus]);
+  }, [isWindowFocused, fetchData, options?.refetchOnWindowFocus]);
 
-  return { data, isLoading, isError, error };
+  return { ...state };
 };
