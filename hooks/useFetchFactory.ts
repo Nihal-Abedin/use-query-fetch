@@ -46,7 +46,7 @@ interface UseMutationResult<P, R> {
     isLoading: boolean;
     isError: boolean;
     error: string | null;
-    doMutation: (payload: P, callbacks?: CallbackOptions<T>) => Promise<void>;
+    doMutation: (payload: P, callbacks?: CallbackOptions<R>) => Promise<void>;
 }
 
 /**
