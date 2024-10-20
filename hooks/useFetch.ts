@@ -16,6 +16,14 @@ export interface QueryState<T> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error: any | null;
 }
+/**
+ * Custom hook for fetching data with caching, error handling, and refetch on window focus.
+ *
+ * @template T - The expected shape of the fetched data.
+ * @param {QueryProperties} queryOptions - Object containing the function that performs the fetch and the query key.
+ * @param {RequestOptions & FetchConfigType} [options] - Optional request and fetch configuration options.
+ * @returns {QueryState<T>} An object containing the current state of the fetch (data, loading, error).
+ */
 export const useFetch = <T>(
   queryOptions: QueryProperties, // function that performs the fetch and returns the response or error
   options?: RequestOptions & FetchConfigType

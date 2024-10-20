@@ -1,4 +1,4 @@
-# Custom React Query Hooks `v-2.0.0`
+# Custom React Query Hooks
 
 This project provides custom React hooks, `useQuery` and `useMutation`, that simplify data fetching and mutation using the Fetch API. The main purpose of building these hooks is to integrate seamlessly with **React Query**, enhancing state management for server data.
 

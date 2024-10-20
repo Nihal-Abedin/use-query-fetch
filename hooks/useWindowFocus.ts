@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 
-export const useWindowFocus = () => {
-    const [isWindowFocused, setIsWindowFocused] = useState(true);
+/**
+ * Custom hook to detect whether the window/tab is currently focused.
+ *
+ * @returns {boolean} Returns `true` if the window is focused, otherwise `false`.
+ *
+ * This hook listens to the `visibilitychange` event and updates the state 
+ * based on whether the document is visible or hidden.
+ */
+export const useWindowFocus = (): boolean => {
+    const [isWindowFocused, setIsWindowFocused] = useState(false);
 
     useEffect(() => {
         // const handleFocus = () => {

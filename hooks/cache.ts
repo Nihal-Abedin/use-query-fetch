@@ -18,6 +18,12 @@ type CacheEntry<T> = {
 // const expiresIn = fetchConfig.cacheTime || 60 *1000;
 export const cache: Map<string, CacheEntry<CachedResponse>> = new Map();
 
+/**
+ * Retrieves data from the cache if it exists and hasn't expired.
+ *
+ * @param {string} key - The key of the cached data.
+ * @returns {CachedResponse | null} The cached data if available and valid, or null if not found or expired.
+ */
 export function getFromCache(key: string): CachedResponse | null {
     const entry = cache.get(key);
     if (!entry) return null;
@@ -30,43 +36,24 @@ export function getFromCache(key: string): CachedResponse | null {
     return entry.data;
 }
 
+/**
+ * Stores data in the cache with an expiration time.
+ *
+ * @param {string} key - The key under which to store the cached data.
+ * @param {CachedResponse} data - The data to be cached.
+ * @param {number} [expiresIn=60000] - Optional expiration time in milliseconds. Defaults to 1 minute.
+ */
 export function setToCache(key: string, data: CachedResponse, expiresIn: number = 60 * 1000): void {
     // Default Cache time is 1 min
     const expiry = Date.now() + expiresIn;
     cache.set(key, { data, expiry });
 }
 
+/**
+ * Clears the cached data for the specified key.
+ *
+ * @param {string} key - The key of the cached data to remove.
+ */
 export function clearCache(key: string): void {
     cache.delete(key);
-}
-export function useCache() {
-    const [cacheState, setCacheState] = useState<Map<string, CacheEntry<CachedResponse>>>(cache);
-
-    const getFromCache = useCallback((key: string): CachedResponse | null => {
-        const entry = cacheState.get(key);
-        if (!entry) return null;
-
-        if (Date.now() > entry.expiry) {
-            cacheState.delete(key);
-            setCacheState(new Map(cacheState)); // Update state
-            return null;
-        }
-
-        return entry.data;
-    }, [cacheState]);
-
-    const setToCache = useCallback((key: string, data: CachedResponse, expiresIn: number = 60 * 1000): void => {
-        const expiry = Date.now() + expiresIn;
-        const updatedCache = new Map(cacheState);
-        updatedCache.set(key, { data, expiry });
-        setCacheState(updatedCache);
-    }, [cacheState]);
-
-    const clearCache = useCallback((key: string): void => {
-        const updatedCache = new Map(cacheState);
-        updatedCache.delete(key);
-        setCacheState(updatedCache);
-    }, [cacheState]);
-
-    return { getFromCache, setToCache, clearCache, cacheState };
 }
